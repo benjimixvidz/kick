@@ -164,9 +164,10 @@ namespace mt
     };
 
 #if defined( KICK_DESKTOP )
-    // Desktop build: where the app screen sits on the desktop, provided by the window. Popups
-    // that cover the screen on the device cover this area instead of the whole display.
-    inline std::function<juce::Rectangle<int>()> getDesktopScreenArea;
+    // Desktop build: the app screen component, provided by the window. Popups that are desktop
+    // windows on the device become its children instead, so they follow the main window, its
+    // zoom and full screen (separate windows land in the wrong place under the zoom).
+    inline std::function<juce::Component*()> getDesktopScreen;
 #endif
 
 } // namespace ui

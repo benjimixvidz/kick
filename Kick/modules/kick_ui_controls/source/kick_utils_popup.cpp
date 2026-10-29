@@ -32,7 +32,9 @@ namespace mt
             setOpaque( true );
 
             setBounds( coveredArea() ); // Overall component Area.
+#if !defined( KICK_DESKTOP ) // attached to the app screen in show()
             addToDesktop( compPeer::windowIsTemporary | compPeer::windowHasDropShadow );
+#endif
         }
 
         virtual ~fsPopup() = default;
@@ -58,17 +60,24 @@ namespace mt
         {
             image.clear( ui::layout::screen );
 
-            if( auto w = juce::TopLevelWindow::getActiveTopLevelWindow() )
-            {
 #if defined( KICK_DESKTOP )
-                // The window may have moved since the popup was created.
-                setBounds( coveredArea() );
-                image = w->createComponentSnapshot( w->getLocalArea( nullptr, coveredArea() ), false );
-#else
-                image = w->createComponentSnapshot( ui::layout::screen, false );
-#endif
+            if( auto screen = mt::getDesktopScreen ? mt::getDesktopScreen() : nullptr )
+            {
+                if( getParentComponent() != screen )
+                    screen->addChildComponent( this );
+                setBounds( screen->getLocalBounds() );
+                image = screen->createComponentSnapshot( screen->getLocalBounds(), false );
                 stack_blur<10>( image );
             }
+            else if( !isOnDesktop() )
+                addToDesktop( compPeer::windowIsTemporary | compPeer::windowHasDropShadow );
+#else
+            if( auto w = juce::TopLevelWindow::getActiveTopLevelWindow() )
+            {
+                image = w->createComponentSnapshot( ui::layout::screen, false );
+                stack_blur<10>( image );
+            }
+#endif
 
             isInUse = true;
             setVisible( true );
@@ -93,10 +102,10 @@ namespace mt
         static juce::Rectangle<int> coveredArea()
         {
 #if defined( KICK_DESKTOP )
-            if( mt::getDesktopScreenArea )
-                return mt::getDesktopScreenArea();
-#endif
+            return ui::layout::screen; // in app screen coordinates
+#else
             return juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->totalArea;
+#endif
         }
 
         virtual void reset()

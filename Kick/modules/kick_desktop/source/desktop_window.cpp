@@ -107,7 +107,7 @@ namespace desktop
         addKeyListener( &keys );
 
         // Popups that cover the app screen must line up with it inside this window.
-        mt::getDesktopScreenArea = [this] { return shell != nullptr ? shell->getAppScreenArea() : juce::Rectangle<int>(); };
+        mt::getDesktopScreen = [this] { return shell != nullptr ? &shell->getAppScreen() : nullptr; };
 
         zoom = (float)settings->getDoubleValue( "zoom", defaultZoom( shell->getContentSize() ) );
         setZoom( zoom );
@@ -120,7 +120,7 @@ namespace desktop
 
     MainWindow::~MainWindow()
     {
-        mt::getDesktopScreenArea = nullptr;
+        mt::getDesktopScreen = nullptr;
 
         auto& keys           = contracts::getKeypressDetector();
         keys.shortcutHandler = nullptr;

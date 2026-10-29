@@ -27,7 +27,9 @@ namespace mt
         bubbleNotification()
             : juce::BubbleMessageComponent()
         {
+#if !defined( KICK_DESKTOP ) // attached to the app screen in show()
             addToDesktop( 0 );
+#endif
             setAllowedPlacement( BubbleMessageComponent::above );
         }
 
@@ -46,9 +48,14 @@ namespace mt
         void show( const juce::AttributedString& Str, juce::Rectangle<int> Bounds = ui::layout::statusBar, int TimeInMS = 1500 )
         {
 #if defined( KICK_DESKTOP )
-            // Bounds are relative to the app screen, which is not at the desktop origin here.
-            if( mt::getDesktopScreenArea )
-                Bounds += mt::getDesktopScreenArea().getPosition();
+            // Bounds are relative to the app screen: show the bubble inside it.
+            if( auto screen = mt::getDesktopScreen ? mt::getDesktopScreen() : nullptr )
+            {
+                if( getParentComponent() != screen )
+                    screen->addChildComponent( this );
+            }
+            else if( !isOnDesktop() )
+                addToDesktop( 0 );
 #endif
             showAt( Bounds, Str, TimeInMS );
             setPosition( Bounds.getCentre(), -1 );

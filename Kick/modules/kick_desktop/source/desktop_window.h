@@ -20,8 +20,8 @@ namespace desktop
 
         // Logical size of the content at zoom 1.
         juce::Rectangle<int> getContentSize() const;
-        // Where the app screen is, in desktop coordinates (for popups that cover it).
-        juce::Rectangle<int> getAppScreenArea() const { return screen.getScreenBounds(); }
+        // The app screen, which hosts the popups that cover it.
+        juce::Component& getAppScreen() const { return screen; }
 
         ControlPanel& getPanel() { return panel; }
 
