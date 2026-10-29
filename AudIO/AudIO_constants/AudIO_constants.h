@@ -80,7 +80,7 @@ namespace DB
 
 // The audio engine's shape: DawEngine( ins, outs, send/returns, submixes, auxes ).
 static constexpr double       AUDIO_SAMPLE_RATE{ 48000.0 };  // asound.conf on the device runs at 48 kHz
-static constexpr int          AUDIO_BLOCK_SIZE{ 256 };       // guess
+static constexpr int          AUDIO_BLOCK_SIZE{ 480 };       // AudIO's DawEngine runs 480-sample blocks (BLOCK_SIZE in DawEngine.cpp) and iSynthVoice sizes a whole block with this
 static constexpr unsigned int AUDIO_NUM_INPUTS{ 2 };         // the V4220M codec: stereo in
 static constexpr unsigned int AUDIO_NUM_OUTPUTS{ 2 };        // and stereo out
 static constexpr unsigned int AUDIO_NUM_SEND_RETURNS{ 4 };   // guess
