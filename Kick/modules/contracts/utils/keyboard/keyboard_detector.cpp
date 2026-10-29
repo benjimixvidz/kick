@@ -28,9 +28,9 @@ namespace contracts
     // return global instance.
     keyPressedDetector& getKeypressDetector() { return _keysDetector; }
 
-#if defined( _WIN32 ) || defined( _WIN64 )
+#if defined( _WIN32 ) || defined( _WIN64 ) || defined( KICK_DESKTOP )
 
-    static const std::map<int, keyPressedDetector::cmdInfo> _keyMap = {
+    static std::map<int, keyPressedDetector::cmdInfo> _keyMap = {
         { juce::KeyPress::upKey, { contracts::DeviceControlContracts::EN_KNOB_CENTER, false, CPktMgr::EN_PKT_TYPE_KNOBS, contracts::DeviceControlContracts::EN_KNOB_ROTARY } },
         { juce::KeyPress::downKey, { contracts::DeviceControlContracts::EN_KNOB_CENTER, false, CPktMgr::EN_PKT_TYPE_KNOBS, contracts::DeviceControlContracts::EN_KNOB_ROTARY } },
         { juce::KeyPress::rightKey, { contracts::DeviceControlContracts::EN_PLUS, false } },
@@ -121,8 +121,9 @@ namespace contracts
 
         auto isKeyDown = juce::KeyPress::isKeyCurrentlyDown( KeyCode );
 
-        // Check for Key Pressed...
-        if( isKeyDown && !_keys.contains( KeyCode ) )
+        // Check for Key Pressed (Ctrl or Alt combinations are application shortcuts, not panel keys)...
+        auto mods = juce::ModifierKeys::getCurrentModifiers();
+        if( isKeyDown && !_keys.contains( KeyCode ) && !mods.isCtrlDown() && !mods.isAltDown() )
         {
             DBG( "Key Pressed: " << juce::KeyPress( KeyCode ).getTextDescription() );
             _keys.addIfNotAlreadyThere( KeyCode );
@@ -142,7 +143,7 @@ namespace contracts
                 else
                 {
                     hwMsg.data.push_back( ( juce::int8 )( contracts::DeviceControlContracts::BTN_PRESSED ) ); // Key Released/Pressed (in case of pad buttons)
-                    hwMsg.data.push_back( ( juce::int8 )( 80 ) ); // Random Velocity
+                    hwMsg.data.push_back( ( juce::int8 )( padVelocity ) ); // Velocity
                     hwMsg.data.push_back( ( juce::int8 )( 100 ) ); // Aftertouch
                 }
                 contracts::KeyboardSignals::KeyboardEventTriggered( hwMsg );
@@ -161,7 +162,7 @@ namespace contracts
                 hwMsg.data.clear();
                 hwMsg.data.push_back( (juce::int8)Info.id );
                 hwMsg.data.push_back( (juce::int8)contracts::DeviceControlContracts::BTN_RELEASED ); // Key Released/Pressed (in case of pad buttons)
-                hwMsg.data.push_back( 80 ); // Random Velocity
+                hwMsg.data.push_back( padVelocity ); // Velocity
                 hwMsg.data.push_back( 100 ); // Aftertouch
                 contracts::KeyboardSignals::KeyboardEventTriggered( hwMsg );
             }
@@ -170,6 +171,7 @@ namespace contracts
 
     bool keyPressedDetector::keyPressed( const juce::KeyPress& key, juce::Component* originatingComponent )
     {
+        if( shortcutHandler ) shortcutHandler( key );
         return true;
     }
 
@@ -181,12 +183,45 @@ namespace contracts
             shiftBtnState = mod.isShiftDown();
             CPktMgr::HWMsg_t hwMsg;
             hwMsg.data.push_back( (juce::int8)contracts::DeviceControlContracts::EN_SHIFT );
-            hwMsg.data.push_back( shiftBtnState ? (juce::int8)contracts::DeviceControlContracts::BTN_RELEASED : (juce::int8)contracts::DeviceControlContracts::BTN_PRESSED ); // Key Released/Pressed (in case of pad butto
+            hwMsg.data.push_back( shiftBtnState ? (juce::int8)contracts::DeviceControlContracts::BTN_PRESSED : (juce::int8)contracts::DeviceControlContracts::BTN_RELEASED ); // Key Released/Pressed (in case of pad butto
             contracts::KeyboardSignals::KeyboardEventTriggered( hwMsg );
         }
         for( const auto& [keyCode, info] : _keyMap )
             detectForKeyCode( keyCode, info );
         return true;
     }
-#endif // defined( _WIN32 ) || defined( _WIN64 )
+
+    void keyPressedDetector::releaseAllKeys()
+    {
+        for( auto keyCode : _keys )
+        {
+            auto it = _keyMap.find( keyCode );
+            if( it == _keyMap.end() || !it->second.releaseEventRequired || !isValidCmd( it->second ) )
+                continue;
+
+            CPktMgr::HWMsg_t hwMsg;
+            hwMsg.pktType = it->second.pktType;
+            hwMsg.pktCmd  = it->second.pktCmd;
+            hwMsg.data    = { it->second.id, contracts::DeviceControlContracts::BTN_RELEASED, padVelocity, 100 };
+            contracts::KeyboardSignals::KeyboardEventTriggered( hwMsg );
+        }
+        _keys.clear();
+
+        if( shiftBtnState )
+        {
+            shiftBtnState = false;
+            CPktMgr::HWMsg_t hwMsg;
+            hwMsg.data = { contracts::DeviceControlContracts::EN_SHIFT, contracts::DeviceControlContracts::BTN_RELEASED };
+            contracts::KeyboardSignals::KeyboardEventTriggered( hwMsg );
+        }
+    }
+
+    void keyPressedDetector::setKeyMap( std::map<int, cmdInfo> keyMap )
+    {
+        releaseAllKeys();
+        _keyMap = std::move( keyMap );
+    }
+
+    const std::map<int, keyPressedDetector::cmdInfo>& keyPressedDetector::getKeyMap() const { return _keyMap; }
+#endif // defined( _WIN32 ) || defined( _WIN64 ) || defined( KICK_DESKTOP )
 } // namespace

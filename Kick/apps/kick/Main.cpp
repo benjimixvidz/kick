@@ -25,6 +25,10 @@
 #include "kick_audio_engine_adapter.h"
 #include "kick_audio_interface.h"
 
+#if defined( KICK_DESKTOP )
+    #include <kick_desktop/kick_desktop.h>
+#endif
+
 #ifdef PERFETTO
     #include "melatonin_perfetto/melatonin_perfetto.h"
 #endif
@@ -133,7 +137,9 @@ public:
         
         adapter.reset( new KickDeviceAdapter() );
         // This method is where you should put your application's initialisation code ...
+#if !defined( KICK_DESKTOP ) // on a desktop the pointer must stay a normal pointer
         juce::Desktop::getInstance().getMainMouseSource().enableUnboundedMouseMovement( true, true );
+#endif
 
         // Exit kiosk mode ...
         juce::Desktop::getInstance().setKioskModeComponent( nullptr );
@@ -145,6 +151,10 @@ public:
         mt::getAudioInterface();
 
         // Initialize User Interface...
+#if defined( KICK_DESKTOP )
+        // Regular desktop window: the app screen next to the on-screen control panel.
+        w = std::make_unique<desktop::MainWindow>( getApplicationName(), kick_ui::KickHome::Instance() );
+#else
         w = std::make_unique<HomeWindow>( getApplicationName() );
 
         // Title bar ...
@@ -174,8 +184,9 @@ public:
 
         // Visibility...
         w->setVisible( true );
+#endif // KICK_DESKTOP
 
-#if !( JUCE_LINUX || __linux__ )
+#if !( JUCE_LINUX || __linux__ ) || defined( KICK_DESKTOP )
         // Desktop debugging aid (not for the device): KICK_SNAPSHOT=<file.png> renders the window
         // to a PNG after KICK_SNAPSHOT_DELAY_MS (default 4000) and quits.
         if( auto path = juce::SystemStats::getEnvironmentVariable( "KICK_SNAPSHOT", {} ); path.isNotEmpty() )

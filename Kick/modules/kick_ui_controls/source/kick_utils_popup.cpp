@@ -31,9 +31,7 @@ namespace mt
         {
             setOpaque( true );
 
-            auto display = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay();
-            auto b       = display->totalArea;
-            setBounds( b ); // Overall component Area.
+            setBounds( coveredArea() ); // Overall component Area.
             addToDesktop( compPeer::windowIsTemporary | compPeer::windowHasDropShadow );
         }
 
@@ -62,7 +60,13 @@ namespace mt
 
             if( auto w = juce::TopLevelWindow::getActiveTopLevelWindow() )
             {
+#if defined( KICK_DESKTOP )
+                // The window may have moved since the popup was created.
+                setBounds( coveredArea() );
+                image = w->createComponentSnapshot( w->getLocalArea( nullptr, coveredArea() ), false );
+#else
                 image = w->createComponentSnapshot( ui::layout::screen, false );
+#endif
                 stack_blur<10>( image );
             }
 
@@ -86,6 +90,15 @@ namespace mt
         }
 
     protected:
+        static juce::Rectangle<int> coveredArea()
+        {
+#if defined( KICK_DESKTOP )
+            if( mt::getDesktopScreenArea )
+                return mt::getDesktopScreenArea();
+#endif
+            return juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->totalArea;
+        }
+
         virtual void reset()
         {
             setAlwaysOnTop( false );

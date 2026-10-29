@@ -19,6 +19,10 @@ juce_add_modules(
 	contracts
 )
 
+if( KICK_DESKTOP )
+    juce_add_modules( kick_desktop )
+endif()
+
 add_subdirectory(3rdParty)
 add_subdirectory(engine)
 

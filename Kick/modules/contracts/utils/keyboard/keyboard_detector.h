@@ -22,6 +22,8 @@
 #pragma once
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <functional>
+#include <map>
 #include "contracts/dcl/dcl_contracts.h"
 #include "PktMgr/PktMgr.hpp"
 
@@ -31,7 +33,7 @@ namespace contracts
 {
     
 
-#if defined( _WIN32 ) || defined( _WIN64 )
+#if defined( _WIN32 ) || defined( _WIN64 ) || defined( KICK_DESKTOP )
     struct keyPressedDetector : public juce::KeyListener
     {
         juce::Array<int> _keys;
@@ -49,8 +51,20 @@ namespace contracts
 
         bool              keyPressed( const juce::KeyPress& key, juce::Component* originatingComponent ) override;
         bool              keyStateChanged( bool isKeyDown, juce::Component* originatingComponent ) override;
-        std::atomic<bool> shiftBtnState;
+        std::atomic<bool> shiftBtnState{ false };
 
+        // Sends a release for every key still held, e.g. when the window loses keyboard focus
+        // and the key-up would otherwise never arrive.
+        void releaseAllKeys();
+
+        // Replaces the built-in key map (the desktop build maps keys by physical position).
+        void                           setKeyMap( std::map<int, cmdInfo> keyMap );
+        const std::map<int, cmdInfo>& getKeyMap() const;
+
+        int padVelocity{ 80 };
+
+        // Application shortcuts (zoom, full screen...) get the first look at every key press.
+        std::function<bool( const juce::KeyPress& )> shortcutHandler;
     };
 #else // implement  this class for other non windows platforms.
     struct keyPressedDetector : public juce::KeyListener
@@ -58,6 +72,6 @@ namespace contracts
         bool keyPressed( const juce::KeyPress& key, juce::Component* originatingComponent ) override { return false;}
         bool keyStateChanged( bool isKeyDown, juce::Component* originatingComponent ) override { return false; };
     };
-#endif // defined( _WIN32 ) || defined( _WIN64 )
+#endif // defined( _WIN32 ) || defined( _WIN64 ) || defined( KICK_DESKTOP )
     keyPressedDetector& getKeypressDetector();
 }

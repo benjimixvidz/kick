@@ -45,6 +45,11 @@ namespace mt
 
         void show( const juce::AttributedString& Str, juce::Rectangle<int> Bounds = ui::layout::statusBar, int TimeInMS = 1500 )
         {
+#if defined( KICK_DESKTOP )
+            // Bounds are relative to the app screen, which is not at the desktop origin here.
+            if( mt::getDesktopScreenArea )
+                Bounds += mt::getDesktopScreenArea().getPosition();
+#endif
             showAt( Bounds, Str, TimeInMS );
             setPosition( Bounds.getCentre(), -1 );
         }
