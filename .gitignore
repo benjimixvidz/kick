@@ -1,0 +1,6 @@
+build*/
+.cpm-cache/
+_deps/
+*.log
+.env
+.env.*
