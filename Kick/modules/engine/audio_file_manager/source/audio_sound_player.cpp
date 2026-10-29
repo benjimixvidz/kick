@@ -30,12 +30,21 @@ namespace mt
     {
         audioFmtMgr.registerBasicFormats();
         ASliceRenderer::setSlice( &slice );
+#if defined( KICK_DESKTOP )
+        // sound is a member, not a heap object: hold a reference for the player's lifetime so
+        // the slice releasing it never deletes it.
+        sound.incReferenceCount();
+#endif
         slice.setSource( &sound );
     }
 
     ASoundPlayer::~ASoundPlayer()
     {
         ASliceRenderer::stop();
+#if defined( KICK_DESKTOP )
+        slice.setSource( nullptr );
+        sound.decReferenceCountWithoutDeleting();
+#endif
     }
 
     void ASoundPlayer::setSoundToPlay( const juce::String& File, double LengthInSeconds )

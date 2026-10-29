@@ -139,11 +139,30 @@ namespace mt
     {
         manager.reset();
     }
+
+#if defined( KICK_DESKTOP )
+    void MTAudioInterface::shutdown()
+    {
+        // Not manager.reset(): it clears the pointer before deleting, and the teardown (closing
+        // the project) notifies listeners that call back into this interface.
+        delete manager.get();
+        manager.release();
+    }
+#endif
     ///
     /// Listners
     ///
     void MTAudioInterface::addListener( MTAudioInterfaceListener* l ) { manager->addListener( l ); }
+#if defined( KICK_DESKTOP )
+    // UI singletons unregister at exit, after shutdown() has released the engine.
+    void MTAudioInterface::removeListener( MTAudioInterfaceListener* l )
+    {
+        if( manager )
+            manager->removeListener( l );
+    }
+#else
     void MTAudioInterface::removeListener( MTAudioInterfaceListener* l ) { manager->removeListener( l ); }
+#endif
 
     ///
     /// Project API's

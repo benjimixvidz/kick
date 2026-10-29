@@ -221,6 +221,13 @@ public:
         // Add your application's shutdown code here ...
         w = nullptr;
         adapter = nullptr;
+#if defined( KICK_DESKTOP )
+        // The UI and the engine are function-local statics. Left to exit() they are destroyed
+        // after JUCE has shut down (MIDI device list and other singletons already gone) and
+        // crash on quit. The screens go first: they listen to the engine.
+        kick_ui::KickHome::Instance().releaseScreens();
+        mt::getAudioInterface().shutdown();
+#endif
     }
 
     //==============================================================================

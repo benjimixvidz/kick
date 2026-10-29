@@ -250,6 +250,17 @@ namespace kick_ui
         ctrlBar_.reset();
     }
 
+#if defined( KICK_DESKTOP )
+    void KickHome::releaseScreens()
+    {
+        cancelPendingUpdate();
+        screens_.clear();
+        stack = {};
+        ctrlBar_.reset();
+        ledControl_.reset();
+    }
+#endif
+
     IScreen* KickHome::getScreen( Screen screen )
     {
         return screens_[screen].get();

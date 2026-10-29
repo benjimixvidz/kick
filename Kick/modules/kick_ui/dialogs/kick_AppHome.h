@@ -43,6 +43,12 @@ namespace kick_ui
 
         void AssignSampleStartUp( void );
 
+#if defined( KICK_DESKTOP )
+        // Deletes the screens while the engine they listen to is still alive: this instance is
+        // a static, destroyed at exit after the engine has been released.
+        void releaseScreens();
+#endif
+
     private:
         KickHome();
         ~KickHome();

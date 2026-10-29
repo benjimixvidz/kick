@@ -121,6 +121,12 @@ namespace mt
         explicit MTAudioInterface( const char* Name, const char* Manufacturer, const char* Version );
         ~MTAudioInterface();
 
+#if defined( KICK_DESKTOP )
+        // Stops and releases the engine while JUCE is still running. Call it last, from the
+        // application's shutdown(): the interface must not be used afterwards.
+        void shutdown();
+#endif
+
         // Listeners
         void addListener( MTAudioInterfaceListener* l );
         void removeListener( MTAudioInterfaceListener* l );
