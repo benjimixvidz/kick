@@ -22,8 +22,8 @@ namespace desktop
             return zoomLevels[0];
         }
 
-        // The largest zoom level whose window fits in most of the work area.
-        float defaultZoom( juce::Rectangle<int> contentSize )
+        // The largest zoom level whose window fits in the given share of the work area.
+        float fittingZoom( juce::Rectangle<int> contentSize, float widthShare, float heightShare )
         {
             auto* display = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay();
             if( display == nullptr )
@@ -31,13 +31,19 @@ namespace desktop
 
             auto scale = juce::Desktop::getInstance().getGlobalScaleFactor();
             auto area  = display->userArea.toFloat() * scale; // in zoom-1 units
-            auto fit   = juce::jmin( area.getWidth() * 0.9f / (float)contentSize.getWidth(), area.getHeight() * 0.85f / (float)contentSize.getHeight() );
+            auto fit   = juce::jmin( area.getWidth() * widthShare / (float)contentSize.getWidth(), area.getHeight() * heightShare / (float)contentSize.getHeight() );
 
             float best = zoomLevels[0];
             for( auto z : zoomLevels )
                 if( z <= fit ) best = z;
             return best;
         }
+
+        float defaultZoom( juce::Rectangle<int> contentSize ) { return fittingZoom( contentSize, 0.9f, 0.85f ); }
+
+        // Beyond this the window is larger than the screen: the window manager crops it, part of
+        // the panel is out of reach, and drawing several times the screen's pixels is slow.
+        float maxZoom( juce::Rectangle<int> contentSize ) { return fittingZoom( contentSize, 1.0f, 0.95f ); }
     }
 
     //==============================================================================
@@ -178,7 +184,7 @@ namespace desktop
 
     void MainWindow::setZoom( float newZoom )
     {
-        zoom = juce::jlimit( zoomLevels[0], zoomLevels[std::size( zoomLevels ) - 1], newZoom );
+        zoom = juce::jlimit( zoomLevels[0], maxZoom( shell->getContentSize() ), newZoom );
         applyLayout();
         saveSettings();
     }
