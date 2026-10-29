@@ -63,6 +63,12 @@ namespace Controls
         static void messageReceived( CPktMgr::HWMsg_t& f_HwMsg );
 
         static sigslot::signal<CPktMgr::HWMsg_t&> dispatchHardwareEvent;
+
+#if defined( KICK_DESKTOP )
+        // Desktop build: there is no control surface, so the messages meant for it (LEDs, pad
+        // colours, slider LEDs) are published here for the on-screen panel. Any thread.
+        static sigslot::signal<const CPktMgr::HWMsg_t&> hardwareOutput;
+#endif
     };
 
 }

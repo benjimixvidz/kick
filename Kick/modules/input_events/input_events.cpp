@@ -22,6 +22,9 @@ namespace Controls
     static CPktMgr                             ms_objPktMgrUsb{ CPktMgr::EN_COM_CHANNEL_USB, ms_arrui8RxBufferUsb.data(), BUFFER_RX_SIZE, ms_arrui8TxBufferUsb.data(), BUFFER_RX_SIZE, 60 };
 
     sigslot::signal<CPktMgr::HWMsg_t&> Controls::InputEvents::dispatchHardwareEvent = {};
+#if defined( KICK_DESKTOP )
+    sigslot::signal<const CPktMgr::HWMsg_t&> Controls::InputEvents::hardwareOutput = {};
+#endif
 
     ///
     /// IMPL...
@@ -311,6 +314,9 @@ namespace Controls
         simInterface->hwInputReceived.connect( []( int id, const std::vector<char>& data ) {
             Controls::InputEvents::dispatchHardwareEvent( id, data );
         } );
+#elif defined( KICK_DESKTOP )
+        // No control surface on a desktop computer: input comes from the keyboard and the
+        // on-screen panel, output goes to hardwareOutput.
 #else
         if( !_FPPort )
         {
@@ -357,6 +363,10 @@ namespace Controls
 
 #ifdef SIM_BUILD
         if( simInterface ) simInterface->sendMessageToHW( f_HwMsg );
+#endif
+#if defined( KICK_DESKTOP )
+        hardwareOutput( f_HwMsg );
+        return;
 #endif
         if( _FPPort ) _FPPort->sendMessageToControlSurface( f_HwMsg );
         else

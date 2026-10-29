@@ -122,8 +122,10 @@ namespace kick_ui
             mt::utils::showDialog( "SUCCESS!", warningPopup, [&]( int R ) {
                 if( R == UI::APPLY )
                 {
+#if !defined( KICK_DESKTOP ) // a desktop build never reboots the computer
                     if( system( "reboot -nf" ) == 0 )
                         DBG( "Rebooting the device so new firmware will apply" );
+#endif
                 }
                 else if( R == UI::CANCEL )
                     closeScreen();

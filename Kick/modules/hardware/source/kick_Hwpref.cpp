@@ -82,10 +82,15 @@ namespace mt
         }
     }
 
+    // Every shell command of this class goes through executeCommand() or executeSetCommand().
+    // They manage the device itself (network, clock, backlight, firmware, power, factory reset)
+    // and must never run on a desktop computer.
     std::string HwPref::executeCommand( const std::string& command )
     {
         std::string result = "";
-#if( JUCE_LINUX || __linux__ )
+#if defined( KICK_DESKTOP )
+        DBG( "Desktop build, device command skipped: " << command );
+#elif( JUCE_LINUX || __linux__ )
         char buffer[128];
 
         FILE* pipe = popen( command.c_str(), "r" );
@@ -110,7 +115,10 @@ namespace mt
     int HwPref::executeSetCommand( const std::string& command )
     {
         int result = 0;
-#if( JUCE_LINUX || __linux__ )
+#if defined( KICK_DESKTOP )
+        DBG( "Desktop build, device command skipped: " << command );
+        result = -1;
+#elif( JUCE_LINUX || __linux__ )
         result = std::system( command.c_str() );
 #endif
         return result;
@@ -219,11 +227,11 @@ namespace mt
         std::string imageFormat    = ".swu";
         std::string creatFolderCmd = "mkdir " + path;
         DBG( "FwUpdate ->extractImage->  " << creatFolderCmd );
-        system( creatFolderCmd.c_str() );
+        executeSetCommand( creatFolderCmd );
         std::string outFullpath = decrptionDir + decryptedFwname;
         std::string cmd         = "mount -o loop -t ext4  " + outFullpath + " " + extractDir;
         DBG( "FwUpdate ->extractImage->  " << cmd );
-        system( cmd.c_str() );
+        executeSetCommand( cmd );
         std::vector<std::string> swuFiles = getSWUFiles( extractDir, imageFormat );
         if( swuFiles.empty() )
         {
@@ -465,7 +473,7 @@ namespace mt
     {
         std::string cmd = "tail -c +" + std::to_string( fw_ver_index ) + " " + fwfilepath + " > " + decrptionDir + fwHeaderFile;
         DBG( "removing Header from image" << cmd );
-        int result = system( cmd.c_str() ); // Execute the command using system call
+        int result = executeSetCommand( cmd ); // Execute the command using system call
 
 	if ( result != 0 )
     {
@@ -494,7 +502,7 @@ namespace mt
         std::string inFwfilepath  = decrptionDir + fwHeaderFile;
         std::string cmd           = "mkdir -p " + decrptionDir; // Create decryption directory if not exists
 #if( JUCE_LINUX || __linux__ )
-        system( cmd.c_str() ); // Execute the command using system call to create directory
+        executeSetCommand( cmd ); // Execute the command using system call to create directory
 
         if( isImgFile( fwfilepath ) )
         { // Check if it's an img file
@@ -503,7 +511,7 @@ namespace mt
                 std::string command = "openssl enc -aes-256-cbc -pbkdf2 -d -salt -in " + inFwfilepath + " -out " + outFwfilepath + " -k '" + decrptKey + "'";
 
                 std::cout << "Decrypting image: " << command << std::endl;
-                int result = system( command.c_str() ); // Execute the command using system call
+                int result = executeSetCommand( command ); // Execute the command using system call
 
                 if( result == 0 )
                 {
@@ -612,7 +620,7 @@ namespace mt
     {
 #if( JUCE_LINUX || __linux__ )
         std::string command = status ? "ifconfig eth0 up" : "ifconfig eth0 down";
-        int         result  = system( command.c_str() ); // Execute the command using system call
+        int         result  = executeSetCommand( command ); // Execute the command using system call
         if( result == 0 )
         {
             return true; // Command executed successfully
@@ -702,25 +710,7 @@ namespace mt
 #if( JUCE_LINUX || __linux__ )
         // Command to retrieve routing information
         std::string command = "ip route show";
-        char        buffer[128];
-        std::string result = "";
-
-        // Open the command for reading
-        FILE* pipe = popen( command.c_str(), "r" );
-        if( !pipe )
-        {
-            std::cerr << "Failed to run command\n";
-            return "";
-        }
-
-        // Read the output of the command
-        while( fgets( buffer, sizeof( buffer ), pipe ) != nullptr )
-        {
-            result += buffer;
-        }
-
-        // Close the pipe
-        pclose( pipe );
+        std::string result  = executeCommand( command );
 
         // Parse the result to find the line corresponding to the desired interface
         std::istringstream iss( result );
@@ -818,7 +808,7 @@ namespace mt
     {
 #if defined( __linux__ ) || defined( __linux ) || defined( linux )
         std::string cmd = "timedatectl set-timezone " + str.toStdString();
-        int         ret = system( cmd.c_str() );
+        int         ret = executeSetCommand( cmd );
         if( ret == 0 )
         {
             DBG( "setting timezone Success" << cmd );
@@ -840,7 +830,7 @@ namespace mt
         std::string setBrightness = "echo  " + std::to_string( value ) + " > /sys/devices/platform/backlight/backlight/backlight/brightness";
         DBG( "Command = " << setBrightness );
 
-        int returnCode = system( setBrightness.c_str() );
+        int returnCode = executeSetCommand( setBrightness );
         if( returnCode == 0 )
         {
             DBG( "Command executed successfully." );
@@ -931,7 +921,7 @@ namespace mt
         std::string cmd = std::to_string( year ) + "-" + std::to_string( month ) + "-" + std::to_string( day );
         DBG( "Setting Day -> " << cmd );
         // Execute the command
-        int result = std::system( cmd.c_str() );
+        int result = executeSetCommand( cmd );
         // Check if the command executed successfully
         if( result == 0 )
         {
@@ -948,7 +938,7 @@ namespace mt
         std::string cmd = std::to_string( hour ) + ":" + std::to_string( minute ) + ":00";
         DBG( "Setting Day -> " << cmd );
         // Execute the command
-        int result = std::system( cmd.c_str() );
+        int result = executeSetCommand( cmd );
         // Check if the command executed successfully
         if( result == 0 )
         {

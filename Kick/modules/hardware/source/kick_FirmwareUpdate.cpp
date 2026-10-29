@@ -432,7 +432,7 @@ namespace mt
         static double _totalProgress = 0.0;
         bool          mcustaus       = ( isMCUImagePresent() && mt::HwPref::getHwPref().getSurfaceVersion().isNotEmpty() );
         ;
-#if defined( __linux__ ) || defined( __linux ) || defined( linux )
+#if( defined( __linux__ ) || defined( __linux ) || defined( linux ) ) && !defined( KICK_DESKTOP ) // never flash firmware from a desktop build
         DBG( "Firmware update confirmed by user... Startting upgrade script..." );
         int                 connfd = -1;
         struct progress_msg msg;
@@ -552,6 +552,8 @@ namespace mt
                 }
             }
         }
+#elif defined( KICK_DESKTOP )
+        fwstatus = FAILURE;
 #endif
         return fwstatus;
     }

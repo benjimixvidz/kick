@@ -73,6 +73,9 @@ namespace mt
 
     void USBFunctionFS::init()
     {
+#if defined( KICK_DESKTOP )
+        return; // USB gadget link to a host computer: device only
+#endif
         const juce::String& usbFilePath = "/dev/usb-utp0/ep0";
         juce::String        epSinkPath  = usbFilePath.substring( 0, usbFilePath.length() - 1 ) + "1";
         g_ep_write                      = openFileDescriptor( epSinkPath );

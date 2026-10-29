@@ -28,6 +28,23 @@ option( DEBUG_TOUCH "Enable mouse cursor" OFF )
 option( USE_ASAN_KICK "enable address sanitizer" OFF )
 option( PERFETTO "Enable tracing using Perfetto" OFF )
 
+# Desktop Linux build: windowed app, keyboard and mouse control, per-user data folders,
+# device-only system commands disabled. On by default for native (non cross-compiled) Linux builds.
+if( CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT CMAKE_CROSSCOMPILING )
+    set( KICK_DESKTOP_DEFAULT ON )
+else()
+    set( KICK_DESKTOP_DEFAULT OFF )
+endif()
+option( KICK_DESKTOP "Desktop Linux build (keyboard and mouse)" ${KICK_DESKTOP_DEFAULT} )
+if( KICK_DESKTOP )
+    message( STATUS "KICK_DESKTOP: building the desktop Linux variant" )
+    add_compile_definitions( KICK_DESKTOP=1 KICK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}" )
+    # Release builds use LTO: run its partitions on every core instead of one after another.
+    if( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
+        add_link_options( $<$<CONFIG:Release>:-flto=auto> )
+    endif()
+endif()
+
 #Compile commands, useful for some IDEs like VS-Code
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 

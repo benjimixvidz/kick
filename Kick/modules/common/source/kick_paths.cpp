@@ -22,6 +22,59 @@
 //common
 #define MT_SOURCE_SRCDIR "."
 
+#if defined( KICK_DESKTOP )
+namespace
+{
+    // Folder name used under the XDG base directories.
+    constexpr const char* desktopAppFolder = "kick-desktop";
+
+    juce::File xdgDir( const char* envVar, const char* fallbackUnderHome )
+    {
+        auto value = juce::SystemStats::getEnvironmentVariable( envVar, {} );
+        if( juce::File::isAbsolutePath( value ) )
+            return juce::File( value ).getChildFile( desktopAppFolder );
+        return juce::File::getSpecialLocation( juce::File::userHomeDirectory ).getChildFile( fallbackUnderHome ).getChildFile( desktopAppFolder );
+    }
+
+    // Where assets/, demos/ and templates/ live, first match wins:
+    // $KICK_DATA_DIR, <prefix>/share/kick-desktop next to the installed binary, the source tree.
+    juce::File findContentDir()
+    {
+        auto hasAssets = []( const juce::File& d ) { return d.getChildFile( "assets" ).isDirectory(); };
+
+        if( auto env = juce::SystemStats::getEnvironmentVariable( "KICK_DATA_DIR", {} ); juce::File::isAbsolutePath( env ) && hasAssets( juce::File( env ) ) )
+            return juce::File( env );
+
+        auto exeDir    = juce::File::getSpecialLocation( juce::File::currentExecutableFile ).getParentDirectory();
+        auto installed = exeDir.getParentDirectory().getChildFile( "share" ).getChildFile( desktopAppFolder );
+        if( hasAssets( installed ) )
+            return installed;
+        if( hasAssets( exeDir ) )
+            return exeDir;
+
+    #if defined( KICK_SOURCE_DIR )
+        if( hasAssets( juce::File( KICK_SOURCE_DIR ) ) )
+            return juce::File( KICK_SOURCE_DIR );
+    #endif
+        return exeDir;
+    }
+
+    struct DesktopDirs
+    {
+        juce::File content{ findContentDir() };
+        juce::File data{ xdgDir( "XDG_DATA_HOME", ".local/share" ) };
+        juce::File state{ xdgDir( "XDG_STATE_HOME", ".local/state" ) };
+        juce::File config{ xdgDir( "XDG_CONFIG_HOME", ".config" ) };
+
+        DesktopDirs()
+        {
+            for( auto sub : { data.getChildFile( "projects" ), data.getChildFile( "sounds" ), state.getChildFile( "logs" ), config.getChildFile( "prefs" ) } )
+                sub.createDirectory();
+        }
+    };
+}
+#endif
+
 juce::File getAppDirs( DirType T )
 {
     auto seprator = juce::File::getSeparatorString();
@@ -56,6 +109,24 @@ juce::File getAppDirs( DirType T )
         return juce::File( "./logs/" );
     else if( T == MTPrefs )
         return juce::File( "./prefs" );
+#elif defined( KICK_DESKTOP )
+    // Read-only content (assets, demos, templates) comes from the install or source tree,
+    // everything the user creates goes to the XDG base directories. Resolved once.
+    static const DesktopDirs dirs;
+    if( T == MTAssets )
+        return dirs.content.getChildFile( "assets" );
+    else if( T == MTSamples )
+        return dirs.data.getChildFile( "sounds" );
+    else if( T == MTDemos )
+        return dirs.content.getChildFile( "demos" );
+    else if( T == MTTemp )
+        return dirs.content.getChildFile( "templates" );
+    else if( T == MTProjects )
+        return dirs.data.getChildFile( "projects" );
+    else if( T == MTLog )
+        return dirs.state.getChildFile( "logs" );
+    else if( T == MTPrefs )
+        return dirs.config.getChildFile( "prefs" );
 #elif defined( LINUX ) || defined( __linux__ )
     if( T == MTAssets )
         return juce::File( "/app/assets" );
@@ -86,6 +157,9 @@ juce::File getDefaultPath()
 
 #elif defined( __APPLE_CPP__ ) || defined( __APPLE_CC__ ) || defined( JUCE_MAC )
     rootP = "./app/";
+
+#elif defined( KICK_DESKTOP )
+    rootP = getAppDirs( MTProjects ).getParentDirectory();
 
 #elif defined( LINUX ) || defined( __linux__ )
     rootP = "./app/";
