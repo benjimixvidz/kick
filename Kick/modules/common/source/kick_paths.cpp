@@ -65,11 +65,20 @@ namespace
         juce::File data{ xdgDir( "XDG_DATA_HOME", ".local/share" ) };
         juce::File state{ xdgDir( "XDG_STATE_HOME", ".local/state" ) };
         juce::File config{ xdgDir( "XDG_CONFIG_HOME", ".config" ) };
+        juce::File demos{ data.getChildFile( "demos" ) };
 
         DesktopDirs()
         {
             for( auto sub : { data.getChildFile( "projects" ), data.getChildFile( "sounds" ), state.getChildFile( "logs" ), config.getChildFile( "prefs" ) } )
                 sub.createDirectory();
+
+            // Demos open in place and are saved on close, as on the device. Give the user a copy
+            // so the source tree or install stays untouched: missing demos are copied in, the
+            // ones already there keep the user's changes.
+            demos.createDirectory();
+            for( const auto& demo : content.getChildFile( "demos" ).findChildFiles( juce::File::findDirectories, false ) )
+                if( auto target = demos.getChildFile( demo.getFileName() ); !target.exists() )
+                    demo.copyDirectoryTo( target );
         }
     };
 }
@@ -110,15 +119,15 @@ juce::File getAppDirs( DirType T )
     else if( T == MTPrefs )
         return juce::File( "./prefs" );
 #elif defined( KICK_DESKTOP )
-    // Read-only content (assets, demos, templates) comes from the install or source tree,
-    // everything the user creates goes to the XDG base directories. Resolved once.
+    // Read-only content (assets, templates) comes from the install or source tree, everything
+    // the user creates or changes (demos included) goes to the XDG base directories. Resolved once.
     static const DesktopDirs dirs;
     if( T == MTAssets )
         return dirs.content.getChildFile( "assets" );
     else if( T == MTSamples )
         return dirs.data.getChildFile( "sounds" );
     else if( T == MTDemos )
-        return dirs.content.getChildFile( "demos" );
+        return dirs.demos;
     else if( T == MTTemp )
         return dirs.content.getChildFile( "templates" );
     else if( T == MTProjects )

@@ -102,12 +102,14 @@ samples adds no latency; any other size works too, with up to 10 ms more.
 | What | Where |
 |---|---|
 | Projects | `~/.local/share/kick-desktop/projects` |
+| Demos (your copy, saved like a project) | `~/.local/share/kick-desktop/demos` |
 | Your samples | `~/.local/share/kick-desktop/sounds` |
 | Settings | `~/.config/kick-desktop` |
 | Logs | `~/.local/state/kick-desktop/logs` |
 
 The XDG variables (`XDG_DATA_HOME` and so on) are honoured. `KICK_DATA_DIR` can point to
-another folder holding `assets/`, `demos/` and `templates/`.
+another folder holding `assets/`, `demos/` and `templates/`. The demos are copied to your
+data folder the first time they are missing there; delete one from it to get the original back.
 
 ## Limitations
 
