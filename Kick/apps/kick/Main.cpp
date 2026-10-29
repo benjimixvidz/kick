@@ -132,6 +132,10 @@ public:
     //==============================================================================
     void initialise( const juce::String& /*commandLine*/ ) override
     {
+#if defined( KICK_DESKTOP )
+        // Before the engine opens its audio device.
+        desktop::restoreAudioSettings();
+#endif
         audioInterface.reset(new KickAudioInterface());
         engineAdapter.reset(new KickAudioEngineAdapter(audioInterface));
         

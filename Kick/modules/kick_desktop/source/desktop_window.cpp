@@ -227,6 +227,8 @@ namespace desktop
             togglePanel();
         else if( letter == 'Q' )
             closeButtonPressed();
+        else if( code == ',' )
+            showAudioSettings();
         else
             return false;
         return true;
@@ -246,6 +248,7 @@ namespace desktop
         add( "Default zoom", "Ctrl 0", [this] { setZoom( defaultZoom( shell->getContentSize() ) ); } );
         add( "Full screen", "Ctrl F", [this] { toggleFullScreen(); }, fullScreen );
         add( "Show control panel", "Ctrl P", [this] { togglePanel(); }, shell->isPanelVisible() );
+        add( "Audio settings...", "Ctrl ,", [] { showAudioSettings(); } );
         add( "Quit", "Ctrl Q", [this] { closeButtonPressed(); } );
     }
 

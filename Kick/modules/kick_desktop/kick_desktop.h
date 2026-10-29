@@ -14,7 +14,7 @@
   website:
   license:            AGPLv3
 
-  dependencies:       kick_ui_controls, juce_gui_basics
+  dependencies:       kick_ui_controls, audio_engine, juce_gui_basics, juce_audio_utils
   linuxLibs:          X11
 
  END_JUCE_MODULE_DECLARATION
@@ -44,6 +44,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <kick_ui_controls/kick_ui_controls.h>
+#include <audio_engine/audio_engine.h>
 #include <array>
 #include <map>
 
@@ -55,4 +56,5 @@
 #include "source/desktop_hardware_state.h"
 #include "source/desktop_keymap.h"
 #include "source/desktop_control_panel.h"
+#include "source/desktop_audio_settings.h"
 #include "source/desktop_window.h"

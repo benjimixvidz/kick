@@ -9,4 +9,5 @@
 #include "source/desktop_hardware_state.cpp"
 #include "source/desktop_keymap.cpp"
 #include "source/desktop_control_panel.cpp"
+#include "source/desktop_audio_settings.cpp"
 #include "source/desktop_window.cpp"
