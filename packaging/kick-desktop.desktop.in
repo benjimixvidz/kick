@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Kick desktop
+Comment=Unofficial Linux desktop build of the open-source KICK music production software
+Exec=@BINARY@
+Terminal=false
+Categories=AudioVideo;Audio;Music;Sequencer;
+Keywords=sampler;sequencer;drum;music;
