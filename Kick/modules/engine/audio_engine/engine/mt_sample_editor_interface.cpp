@@ -21,6 +21,15 @@ namespace mt
         ~MTSampleEditorData()
         {
             undoManager.removeChangeListener( this );
+#if defined( KICK_DESKTOP )
+            // The engine's undo history outlives this editor: drop the sample edits, which
+            // point into undoActions, before it goes.
+            MTSampleEditUndoAction::setClearHistory( true );
+            undoActions.clear();
+            undoManager.clearUndoHistory();
+            MTSampleEditUndoAction::setClearHistory( false );
+            MTSampleEditUndoAction::setUndoActions( nullptr );
+#endif
             MTSampleEditUndoAction::cleanup();
         }
 
@@ -71,6 +80,14 @@ namespace mt
             }
             if( source == &undoManager )
             {
+#if defined( KICK_DESKTOP )
+                // Every undoable change lands here (selecting or moving a slice, any project
+                // edit), not only sample edits. Reloading stops playback, so selecting a new
+                // slice from a pad cut the sound it had just started: reload only when an edit
+                // (or its undo) has rewritten the file.
+                if( sourceFile.getLastModificationTime() == sourceModifiedTime )
+                    return;
+#endif
                 setSource( sourceFile );
                 for( MTSamplePlayerListener* listner : listeners )
                 {

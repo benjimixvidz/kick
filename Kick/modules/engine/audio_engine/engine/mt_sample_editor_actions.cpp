@@ -25,7 +25,11 @@ namespace mt
     MTSampleEditUndoAction::~MTSampleEditUndoAction()
     {
         juce::int64 totalSamplesToRemove = getTotalSizeInSamples();
+#if defined( KICK_DESKTOP )
+        if( !clearHistory && undoActions != nullptr && !undoActions->empty() )
+#else
         if( !clearHistory )
+#endif
         {
             if( this != *undoActions->begin() )
                 jassertfalse;
@@ -207,8 +211,13 @@ namespace mt
         undoFile.deleteFile();
     }
 
-    void MTSampleEditUndoAction::setClearHistory( bool /*setClear*/ )
+    void MTSampleEditUndoAction::setClearHistory( bool setClear )
     {
+#if defined( KICK_DESKTOP )
+        // Upstream never stored the flag, so clearing the history made every action unhook
+        // itself from the list that had just been emptied.
+        clearHistory = setClear;
+#endif
         if( clearHistory )
             undoFile.deleteFile();
     }
